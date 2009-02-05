@@ -4,7 +4,7 @@
 # Synopsis: Holds typedef info parsed by headerDoc
 #
 # Author: Matt Morse (matt@apple.com)
-# Last Updated: $Date: 2004/01/17 03:01:36 $
+# Last Updated: $Date: 2004/10/04 23:11:29 $
 # 
 # Copyright (c) 1999-2004 Apple Computer, Inc.  All rights reserved.
 #
@@ -38,7 +38,7 @@ use XML::Twig;
 
 use strict;
 use vars qw($VERSION @ISA);
-$VERSION = '1.20';
+$VERSION = '$Revision: 1.1.2.4 $';
 
 sub stringFromFile
 {
@@ -59,7 +59,7 @@ sub regenerate
     print "Would regenerate $inpath->$outpath if this did something.\n";
 
     my $xmlfile = $inpath;
-    $xmlfile =~ s/^(.*)\..*?$/$1.xml/;
+    $xmlfile =~ s/^(.*)\..*?$/$1.xml/o;
 
     if (!-f $xmlfile) {
 	print "No XML file found for $inpath.  Skipping.\n";

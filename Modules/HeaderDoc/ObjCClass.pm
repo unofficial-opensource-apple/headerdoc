@@ -6,7 +6,7 @@
 # Initial modifications: SKoT McDonald <skot@tomandandy.com> Aug 2001
 #
 # Based on CPPClass by Matt Morse (matt@apple.com)
-# Last Updated: $Date: 2004/02/09 19:35:19 $
+# Last Updated: $Date: 2004/10/04 23:11:25 $
 # 
 # Copyright (c) 1999-2004 Apple Computer, Inc.  All rights reserved.
 #
@@ -45,12 +45,12 @@ use HeaderDoc::ObjCContainer;
 
 use strict;
 use vars qw($VERSION @ISA);
-$VERSION = '1.20';
+$VERSION = '$Revision: 1.2.2.4.2.11 $';
 
 ################ Portability ###################################
 my $isMacOS;
 my $pathSeparator;
-if ($^O =~ /MacOS/i) {
+if ($^O =~ /MacOS/io) {
 	$pathSeparator = ":";
 	$isMacOS = 1;
 } else {
@@ -74,6 +74,7 @@ sub _initialize {
     my($self) = shift;
     $self->SUPER::_initialize();
     $self->tocTitlePrefix('Class:');
+    $self->{CLASS} = "HeaderDoc::ObjCClass";
 }
 
 sub getMethodType {
@@ -81,16 +82,18 @@ sub getMethodType {
 	my $declaration = shift;
 	my $methodType = "";
 		
-	if ($declaration =~ /^\s*-/) {
+	if ($declaration =~ /^\s*-/o) {
 	    $methodType = "instm";
-	} elsif ($declaration =~ /^\s*\+/) {
+	} elsif ($declaration =~ /^\s*\+/o) {
 	    $methodType = "clm";
 	} else {
 		# my $filename = $HeaderDoc::headerObject->filename();
 		my $filename = $self->filename();
 		my $linenum = $self->linenum();
-		print "$filename:$linenum:Unable to determine whether declaration is for an instance or class method[class].\n";
-		print "$filename:$linenum:     '$declaration'\n";
+		if (!$HeaderDoc::ignore_apiuid_errors) {
+			print "$filename:$linenum:Unable to determine whether declaration is for an instance or class method[class].\n";
+			print "$filename:$linenum:     '$declaration'\n";
+		}
 	}
 	return $methodType;
 }
@@ -101,9 +104,13 @@ sub getMethodType {
 sub docNavigatorComment {
     my $self = shift;
     my $name = $self->name();
-    $name =~ s/;//sg;
-    my $navComment = "<!-- headerDoc=cl; name=$name-->";
+    $name =~ s/;//sgo;
     my $uid = $self->apiuid("cl"); # "//apple_ref/occ/cl/$name";
+
+    my $indexgroup = $self->indexgroup(); my $igstring = "";
+    if (length($indexgroup)) { $igstring = "indexgroup=$indexgroup;"; }
+
+    my $navComment = "<!-- headerDoc=cl; uid=$uid; $igstring name=$name-->";
     my $appleRef = "<a name=\"$uid\"></a>";
     
     return "$navComment\n$appleRef";
@@ -113,7 +120,7 @@ sub docNavigatorComment {
 sub objName { # used for sorting
     my $obj1 = $a;
     my $obj2 = $b;
-    return ($obj1->name() cmp $obj2->name());
+    return (lc($obj1->name()) cmp lc($obj2->name()));
 }
 
 

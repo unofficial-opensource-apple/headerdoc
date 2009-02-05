@@ -54,6 +54,15 @@
 	    <li>Single UNIX Specification</li>
 	    <li>POSIX</li>
 	</ul>
+
+	<p>Here's a definition list:</p>
+	<dl>
+	    <dd>foo_aaa</dd>
+		<dt>This is foo</dt>
+	    <dd>bar</dd>
+		<dt>This is bar</dt>
+	</dl>
+
 </conformingto>
 
 <history>

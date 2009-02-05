@@ -6,7 +6,7 @@
 #
 #
 # Author: Matt Morse (matt@apple.com)
-# Last Updated: $Date: 2004/02/09 19:35:19 $
+# Last Updated: $Date: 2004/10/04 23:11:24 $
 # 
 # Copyright (c) 1999-2004 Apple Computer, Inc.  All rights reserved.
 #
@@ -37,7 +37,7 @@ BEGIN {
 }
 package HeaderDoc::ObjCCategory;
 
-use HeaderDoc::Utilities qw(findRelativePath safeName getAPINameAndDisc printArray printHash registerUID);
+use HeaderDoc::Utilities qw(findRelativePath safeName getAPINameAndDisc printArray printHash registerUID unregisterUID);
 use HeaderDoc::ObjCContainer;
 
 # Inheritance
@@ -45,12 +45,12 @@ use HeaderDoc::ObjCContainer;
 
 use strict;
 use vars qw($VERSION @ISA);
-$VERSION = '1.20';
+$VERSION = '$Revision: 1.3.2.4.2.11 $';
 
 ################ Portability ###################################
 my $isMacOS;
 my $pathSeparator;
-if ($^O =~ /MacOS/i) {
+if ($^O =~ /MacOS/io) {
 	$pathSeparator = ":";
 	$isMacOS = 1;
 } else {
@@ -74,6 +74,7 @@ sub _initialize {
     my($self) = shift;
 	$self->SUPER::_initialize();
     $self->tocTitlePrefix('Category:');
+    $self->{CLASS} = "HeaderDoc::ObjCCategory";
 }
 
 sub className {
@@ -93,16 +94,18 @@ sub getMethodType {
 	my $declaration = shift;
 	my $methodType = "";
 		
-	if ($declaration =~ /^\s*-/) {
+	if ($declaration =~ /^\s*-/o) {
 	    $methodType = "instm";
-	} elsif ($declaration =~ /^\s*\+/) {
+	} elsif ($declaration =~ /^\s*\+/o) {
 	    $methodType = "clm";
 	} else {
 		# my $filename = $HeaderDoc::headerObject->filename();
 		my $filename = $self->filename();
 		my $linenum = $self->linenum();
-		print "$filename:$linenum:Unable to determine whether declaration is for an instance or class method[cat].\n";
-		print "$filename:$linenum:     '$declaration'\n";
+		if (!$HeaderDoc::ignore_apiuid_errors) {
+			print "$filename:$linenum:Unable to determine whether declaration is for an instance or class method[cat].\n";
+			print "$filename:$linenum:     '$declaration'\n";
+		}
 	}
 	return $methodType;
 }
@@ -113,16 +116,22 @@ sub getMethodType {
 sub docNavigatorComment {
     my $self = shift;
     my $name = $self->name();
+
+    my $olduid = $self->apiuid();
     
     # regularize name by removing spaces and semicolons, if any
-    $name =~ s/\s+//g;
-    $name =~ s/;//sg;
+    $name =~ s/\s+//go;
+    $name =~ s/;//sgo;
+
+    my $indexgroup = $self->indexgroup(); my $igstring = "";
+    if (length($indexgroup)) { $igstring = "indexgroup=$indexgroup;"; }
     
-    my $navComment = "<!-- headerDoc=cat; name=$name-->";
     my $uid = $self->apiuid("cat"); # "//apple_ref/occ/cat/$name";
+    my $navComment = "<!-- headerDoc=cat; uid=$uid; $igstring name=$name-->";
     my $appleRef = "<a name=\"$uid\"></a>";
 
-    registerUID($uid);
+    unregisterUID($olduid, $name);
+    registerUID($uid, $name);
     
     return "$navComment\n$appleRef";
 }
@@ -131,7 +140,7 @@ sub docNavigatorComment {
 sub objName { # used for sorting
     my $obj1 = $a;
     my $obj2 = $b;
-    return ($obj1->name() cmp $obj2->name());
+    return (lc($obj1->name()) cmp lc($obj2->name()));
 }
 
 sub getClassAndCategoryName {
@@ -141,7 +150,7 @@ sub getClassAndCategoryName {
     my $filename = shift; # $HeaderDoc::headerObject->filename();
     my $linenum = shift; 
 
-    if ($fullName =~ /(\w+)\s*(\((.*)\))?/) {
+    if ($fullName =~ /(\w+)\s*(\((.*)\))?/o) {
     	$className = $1;
     	$categoryName =$3;
     	if (!length ($className)) {

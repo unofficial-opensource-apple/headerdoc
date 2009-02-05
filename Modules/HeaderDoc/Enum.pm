@@ -4,7 +4,7 @@
 # Synopsis: Holds struct info parsed by headerDoc
 #
 # Author: Matt Morse (matt@apple.com)
-# Last Updated: $Date: 2004/02/05 07:01:48 $
+# Last Updated: $Date: 2004/10/13 00:09:28 $
 # 
 # Copyright (c) 1999-2004 Apple Computer, Inc.  All rights reserved.
 #
@@ -39,7 +39,7 @@ use HeaderDoc::APIOwner;
 
 use strict;
 use vars qw($VERSION @ISA);
-$VERSION = '1.20';
+$VERSION = '$Revision: 1.10.2.9.2.24 $';
 
 sub new {
     my($param) = shift;
@@ -55,6 +55,7 @@ sub _initialize {
     my($self) = shift;
     
     $self->SUPER::_initialize();
+    $self->{CLASS} = "HeaderDoc::Enum";
 }
 
 sub clone {
@@ -74,14 +75,24 @@ sub clone {
 }
 
 
-sub processEnumComment {
+sub processComment {
     my $self = shift;
     my $fieldArrayRef = shift;
     my @fields = @$fieldArrayRef;
+    my $filename = $self->filename();
+    my $linenum = $self->linenum();
+
 	foreach my $field (@fields) {
 		SWITCH: {
-            ($field =~ /^\/\*\!/)&& do {last SWITCH;}; # ignore opening /*!
-            ($field =~ s/^enum(\s+)/$1/) && 
+            ($field =~ /^\/\*\!/o)&& do {
+                                my $copy = $field;
+                                $copy =~ s/^\/\*\!\s*//s;
+                                if (length($copy)) {
+                                        $self->discussion($copy);
+                                }
+                        last SWITCH;
+                        };
+            ($field =~ s/^enum(\s+)/$1/o) && 
             do {
                 my ($name, $disc);
                 ($name, $disc) = &getAPINameAndDisc($field); 
@@ -89,23 +100,59 @@ sub processEnumComment {
                 if (length($disc)) {$self->discussion($disc);};
                 last SWITCH;
             };
-            ($field =~ s/^abstract\s+//) && do {$self->abstract($field); last SWITCH;};
-            ($field =~ s/^discussion\s+//) && do {$self->discussion($field); last SWITCH;};
-            ($field =~ s/^availability\s+//) && do {$self->availability($field); last SWITCH;};
-            ($field =~ s/^since\s+//) && do {$self->availability($field); last SWITCH;};
-            ($field =~ s/^author\s+//) && do {$self->attribute("Author", $field, 0); last SWITCH;};
-            ($field =~ s/^version\s+//) && do {$self->attribute("Version", $field, 0); last SWITCH;};
-            ($field =~ s/^deprecated\s+//) && do {$self->attribute("Deprecated", $field, 0); last SWITCH;};
-            ($field =~ s/^updated\s+//) && do {$self->updated($field); last SWITCH;};
-	    ($field =~ /^see(also|)\s+/) &&
+            ($field =~ s/^abstract\s+//o) && do {$self->abstract($field); last SWITCH;};
+            ($field =~ s/^discussion\s+//o) && do {$self->discussion($field); last SWITCH;};
+            ($field =~ s/^availability\s+//o) && do {$self->availability($field); last SWITCH;};
+            ($field =~ s/^since\s+//o) && do {$self->availability($field); last SWITCH;};
+            ($field =~ s/^author\s+//o) && do {$self->attribute("Author", $field, 0); last SWITCH;};
+            ($field =~ s/^version\s+//o) && do {$self->attribute("Version", $field, 0); last SWITCH;};
+            ($field =~ s/^deprecated\s+//o) && do {$self->attribute("Deprecated", $field, 0); last SWITCH;};
+            ($field =~ s/^updated\s+//o) && do {$self->updated($field); last SWITCH;};
+	    ($field =~ s/^attribute\s+//o) && do {
+		    my ($attname, $attdisc) = &getAPINameAndDisc($field);
+		    if (length($attname) && length($attdisc)) {
+			$self->attribute($attname, $attdisc, 0);
+		    } else {
+			warn "$filename:$linenum:Missing name/discussion for attribute\n";
+		    }
+		    last SWITCH;
+		};
+	    ($field =~ s/^attributelist\s+//o) && do {
+		    $field =~ s/^\s*//so;
+		    $field =~ s/\s*$//so;
+		    my ($name, $lines) = split(/\n/, $field, 2);
+		    $name =~ s/^\s*//so;
+		    $name =~ s/\s*$//so;
+		    $lines =~ s/^\s*//so;
+		    $lines =~ s/\s*$//so;
+		    if (length($name) && length($lines)) {
+			my @attlines = split(/\n/, $lines);
+			foreach my $line (@attlines) {
+			    $self->attributelist($name, $line);
+			}
+		    } else {
+			warn "$filename:$linenum:Missing name/discussion for attributelist\n";
+		    }
+		    last SWITCH;
+		};
+	    ($field =~ s/^attributeblock\s+//o) && do {
+		    my ($attname, $attdisc) = &getAPINameAndDisc($field);
+		    if (length($attname) && length($attdisc)) {
+			$self->attribute($attname, $attdisc, 1);
+		    } else {
+			warn "$filename:$linenum:Missing name/discussion for attributeblock\n";
+		    }
+		    last SWITCH;
+		};
+	    ($field =~ /^see(also|)\s+/o) &&
 		do {
 		    $self->see($field);
 		    last SWITCH;
 		};
-            ($field =~ s/^constant\s+//) && 
+            ($field =~ s/^constant\s+//o) && 
             do {
-				$field =~ s/^\s+|\s+$//g;
-	            $field =~ /(\w*)\s*(.*)/s;
+				$field =~ s/^\s+|\s+$//go;
+	            $field =~ /(\w*)\s*(.*)/so;
 	            my $cName = $1;
 	            my $cDesc = $2;
 	            my $cObj = HeaderDoc::MinorAPIElement->new();
@@ -123,7 +170,8 @@ sub processEnumComment {
 	    # my $filename = $HeaderDoc::headerObject->filename();
 	    my $filename = $self->filename();
 	    my $linenum = $self->linenum();
-            print "$filename:$linenum:Unknown field in Enum comment: $field\n";
+            # print "$filename:$linenum:Unknown field in Enum comment: $field\n";
+		    if (length($field)) { warn "$filename:$linenum:Unknown field (\@$field) in enum comment (".$self->name().")\n"; }
 		}
 	}
 }
@@ -135,10 +183,13 @@ sub getEnumDeclaration {
     
     print "============================================================================\n" if ($localDebug);
     print "Raw declaration is: $dec\n" if ($localDebug);
+    if ($HeaderDoc::use_styles) {
+	return $dec;
+    }
     
-    $dec =~ s/\t/  /g;
-    $dec =~ s/</&lt;/g;
-    $dec =~ s/>/&gt;/g;
+    $dec =~ s/\t/  /go;
+    $dec =~ s/</&lt;/go;
+    $dec =~ s/>/&gt;/go;
     if (length ($dec)) {$dec = "<pre>\n$dec</pre>\n";};
     
     print "Enum: returning declaration:\n\t|$dec|\n" if ($localDebug);
@@ -146,57 +197,6 @@ sub getEnumDeclaration {
     return $dec;
 }
 
-
-sub XMLdocumentationBlock {
-    my $self = shift;
-    my $name = $self->name();
-    my $abstract = $self->abstract();
-    my $availability = $self->availability();
-    my $updated = $self->updated();
-    my $desc = $self->discussion();
-    my $declaration = $self->declarationInHTML();
-    my @constants = $self->constants();
-    my $group = $self->group();
-    my $contentString;
-    # my $apiUIDPrefix = HeaderDoc::APIOwner->apiUIDPrefix();
-    
-    my $uid = $self->apiuid("tag"); # "//$apiUIDPrefix/c/tag/$name";
-    # registerUID($uid);
-    $contentString .= "<enum id=\"$uid\">\n"; # apple_ref marker
-    $contentString .= "<name>$name</name>\n";
-    if (length($abstract)) {
-        $contentString .= "<abstract>$abstract</abstract>\n";
-    }
-    if (length($availability)) {
-        $contentString .= "<availability>$availability</availability>\n";
-    }
-    if (length($updated)) {
-        $contentString .= "<updated>$updated</updated>\n";
-    }
-    if (length($group)) {
-	$contentString .= "<group>$group</group>\n";
-    }
-    $contentString .= "<declaration>$declaration</declaration>\n";
-    $contentString .= "<description>$desc</description>\n";
-    my $arrayLength = @constants;
-    if ($arrayLength > 0) {
-        $contentString .= "<constantlist>\n";
-        foreach my $element (@constants) {
-            my $cName = $element->name();
-            my $cDesc = $element->discussion();
-            # my $uid = "//$apiUIDPrefix/c/econst/$cName";
-	    # registerUID($uid);
-	    my $uid = $element->apiuid("econst");
-            $contentString .= "<constant id=\"$uid\">\n";
-	    $contentString .= "<name>$cName</name>\n";
-	    $contentString .= "<description>$cDesc</description>\n";
-	    $contentString .= "</constant>\n";
-        }
-        $contentString .= "</constantlist>\n";
-    }
-    $contentString .= "</enum>\n";
-    return $contentString;
-}
 
 sub printObject {
     my $self = shift;
