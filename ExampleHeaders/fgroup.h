@@ -19,7 +19,7 @@
 /*! @function _maintRequest1
     @abstract Synchrounous implementation of $link addEventSource & $link removeEventSource functions.
     @discussion Test of unnamed parameters. */
-    virtual IOReturn _maintRequest1(void *command, void *data, void *, void *);
+    virtual IOReturn _maintRequest(void *command, void *data, void *, void *);
 
 /*! @function test1
     @abstract Test of vararg.
@@ -33,7 +33,7 @@
 /*! @function _maintRequest2
     @abstract Synchrounous implementation of $link addEventSource & $link removeEventSource functions.
     @discussion Test of unnamed parameters. */
-    virtual IOReturn _maintRequest2(void *command, void *data, void *, void *);
+    virtual IOReturn _maintRequest(void *command, void *data, void *, void *);
 
 /*! @function test2
     @abstract Test of vararg.
@@ -46,7 +46,7 @@
 /*! @function _maintRequest3
     @abstract Synchrounous implementation of $link addEventSource & $link removeEventSource functions.
     @discussion Test of unnamed parameters. */
-    virtual IOReturn _maintRequest3(void *command, void *data, void *, void *);
+    virtual IOReturn _maintRequest(void *command, void *data, void *, void *);
 
 /*! @function test3
     @abstract Test of vararg.
@@ -60,7 +60,7 @@
 /*! @function _maintRequest4
     @abstract Synchrounous implementation of $link addEventSource & $link removeEventSource functions.
     @discussion Test of unnamed parameters. */
-    virtual IOReturn _maintRequest4(void *command, void *data, void *, void *);
+    virtual IOReturn _maintRequest(void *command, void *data, void *, void *);
 
 /*! @function test4
     @abstract Test of vararg.

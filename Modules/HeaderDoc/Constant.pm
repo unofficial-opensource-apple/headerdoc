@@ -4,7 +4,7 @@
 # Synopsis: Holds constant info parsed by headerDoc
 #
 # Author: Matt Morse (matt@apple.com)
-# Last Updated: $Date: 2004/06/13 04:59:12 $
+# Last Updated: $Date: 2004/02/05 07:01:48 $
 # 
 # Copyright (c) 1999-2004 Apple Computer, Inc.  All rights reserved.
 #
@@ -40,51 +40,17 @@ use strict;
 use vars qw($VERSION @ISA);
 $VERSION = '1.20';
 
-sub new {
-    my($param) = shift;
-    my($class) = ref($param) || $param;
-    my $self = {};
-    
-    bless($self, $class); 
-    $self->_initialize();
-    return($self);
-}
-
-sub _initialize {
-    my($self) = shift;
-    $self->SUPER::_initialize();
-    $self->{CLASS} = "HeaderDoc::Constant";
-}
-
-sub clone {
-    my $self = shift;
-    my $clone = undef;
-    if (@_) {
-        $clone = shift;
-    } else {
-        $clone = HeaderDoc::Constant->new();
-    }
-
-    $self->SUPER::clone($clone);
-
-    # now clone stuff specific to var
-
-    return $clone;
-}
-
-sub processComment {
+sub processConstantComment {
     my($self) = shift;
     my $fieldArrayRef = shift;
     my @fields = @$fieldArrayRef;
-    my $filename = $self->filename();
-    my $linenum = $self->linenum();
     my $localDebug = 0;
 
 	foreach my $field (@fields) {
     	print "Constant field is |$field|\n" if ($localDebug);
 		SWITCH: {
-            ($field =~ /^\/\*\!/o)&& do {last SWITCH;}; # ignore opening /*!
-            ($field =~ s/^const(ant)?(\s+)//o) && 
+            ($field =~ /^\/\*\!/)&& do {last SWITCH;}; # ignore opening /*!
+            ($field =~ s/^const(ant)?(\s+)//) && 
             do {
 		if (length($2)) { $field = "$2$field"; }
 		else { $field = "$1$field"; }
@@ -94,62 +60,25 @@ sub processComment {
                 if (length($disc)) {$self->discussion($disc);};
                 last SWITCH;
             };
-	    ($field =~ s/^serial\s+//io) && do {$self->attribute("Serial Field Info", $field, 1); last SWITCH;};
-            ($field =~ s/^abstract\s+//o) && do {$self->abstract($field); last SWITCH;};
-            ($field =~ s/^discussion\s+//o) && do {$self->discussion($field); last SWITCH;};
-            ($field =~ s/^availability\s+//o) && do {$self->availability($field); last SWITCH;};
-            ($field =~ s/^since\s+//o) && do {$self->availability($field); last SWITCH;};
-            ($field =~ s/^author\s+//o) && do {$self->attribute("Author", $field, 0); last SWITCH;};
-            ($field =~ s/^version\s+//o) && do {$self->attribute("Version", $field, 0); last SWITCH;};
-            ($field =~ s/^deprecated\s+//o) && do {$self->attribute("Deprecated", $field, 0); last SWITCH;};
-            ($field =~ s/^updated\s+//o) && do {$self->updated($field); last SWITCH;};
-	    ($field =~ s/^attribute\s+//o) && do {
-		    my ($attname, $attdisc) = &getAPINameAndDisc($field);
-		    if (length($attname) && length($attdisc)) {
-			$self->attribute($attname, $attdisc, 0);
-		    } else {
-			warn "$filename:$linenum:Missing name/discussion for attribute\n";
-		    }
-		    last SWITCH;
-		};
-	    ($field =~ s/^attributelist\s+//o) && do {
-		    $field =~ s/^\s*//so;
-		    $field =~ s/\s*$//so;
-		    my ($name, $lines) = split(/\n/, $field, 2);
-		    $name =~ s/^\s*//so;
-		    $name =~ s/\s*$//so;
-		    $lines =~ s/^\s*//so;
-		    $lines =~ s/\s*$//so;
-		    if (length($name) && length($lines)) {
-			my @attlines = split(/\n/, $lines);
-			foreach my $line (@attlines) {
-			    $self->attributelist($name, $line);
-			}
-		    } else {
-			warn "$filename:$linenum:Missing name/discussion for attributelist\n";
-		    }
-		    last SWITCH;
-		};
-	    ($field =~ s/^attributeblock\s+//o) && do {
-		    my ($attname, $attdisc) = &getAPINameAndDisc($field);
-		    if (length($attname) && length($attdisc)) {
-			$self->attribute($attname, $attdisc, 1);
-		    } else {
-			warn "$filename:$linenum:Missing name/discussion for attributeblock\n";
-		    }
-		    last SWITCH;
-		};
-	    ($field =~ /^see(also|)\s+/o) &&
+	    ($field =~ s/^serial\s+//i) && do {$self->attribute("Serial Field Info", $field, 1); last SWITCH;};
+            ($field =~ s/^abstract\s+//) && do {$self->abstract($field); last SWITCH;};
+            ($field =~ s/^discussion\s+//) && do {$self->discussion($field); last SWITCH;};
+            ($field =~ s/^availability\s+//) && do {$self->availability($field); last SWITCH;};
+            ($field =~ s/^since\s+//) && do {$self->availability($field); last SWITCH;};
+            ($field =~ s/^author\s+//) && do {$self->attribute("Author", $field, 0); last SWITCH;};
+            ($field =~ s/^version\s+//) && do {$self->attribute("Version", $field, 0); last SWITCH;};
+            ($field =~ s/^deprecated\s+//) && do {$self->attribute("Deprecated", $field, 0); last SWITCH;};
+            ($field =~ s/^updated\s+//) && do {$self->updated($field); last SWITCH;};
+	    ($field =~ /^see(also|)\s+/) &&
 		do {
 		    $self->see($field);
 		    last SWITCH;
 		};
 	    # my $filename = $HeaderDoc::headerObject->filename();
-            # warn "$filename:$linenum:Unknown field in constant comment: $field\n";
-		{
-		    if (length($field)) { warn "$filename:$linenum:Unknown field (\@$field) in constant comment (".$self->name().")\n"; }
-		};
-	    }
+	    my $filename = $self->filename();
+	    my $linenum = $self->linenum();
+            print "$filename:$linenum:Unknown field in constant comment: $field\n";
+		}
 	}
 }
 
@@ -161,10 +90,59 @@ sub setConstantDeclaration {
     print "============================================================================\n" if ($localDebug);
     print "Raw constant declaration is: $dec\n" if ($localDebug);
     $self->declaration($dec);
+    
+    $dec =~ s/^extern\s+//;
+    $dec =~ s/\t/ /g;
+    $dec =~ s/</&lt;/g;
+    $dec =~ s/>/&gt;/g;
+    if (length ($dec)) {$dec = "<pre>\n$dec</pre>\n";};
+    print "Constant: returning declaration:\n\t|$dec|\n" if ($localDebug);
+    print "============================================================================\n" if ($localDebug);
     $self->declarationInHTML($dec);
     return $dec;
 }
 
+
+sub XMLdocumentationBlock {
+    my $self = shift;
+    my $contentString;
+    my $name = $self->name();
+    my $abstract = $self->abstract();
+    my $availability = $self->availability();
+    my $updated = $self->updated();
+    my $desc = $self->discussion();
+    my $declaration = $self->declarationInHTML();
+    my $group = $self->group();
+    my $value = $self->value();
+    # my $apiUIDPrefix = HeaderDoc::APIOwner->apiUIDPrefix();
+    
+    my $uid = $self->apiuid("data"); # "//$apiUIDPrefix/c/data/$name";
+    # registerUID($uid);
+
+    $contentString .= "<const id=\"$uid\">\n"; # apple_ref marker
+    $contentString .= "<name>$name</name>\n";
+    if (length($abstract)) {
+        $contentString .= "<abstract>$abstract</abstract>\n";
+    }
+    if (length($availability)) {
+        $contentString .= "<availability>$availability</availability>\n";
+    }
+    if (length($updated)) {
+        $contentString .= "<updated>$updated</updated>\n";
+    }
+    if (length($group)) {
+	$contentString .= "<group>$group</group>\n";
+    }
+    if (length($value)) {
+	$contentString .= "<value>$value</value>\n";
+    }
+    $contentString .= "<declaration>$declaration</declaration>\n";
+    $contentString .= "<description>$desc</description>\n";
+    $contentString .= "</const>\n";
+
+    my $value_fixed_contentString = $self->fixup_values($contentString);
+    return $value_fixed_contentString;
+}
 
 sub printObject {
     my $self = shift;

@@ -25,7 +25,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
-#include <string.h>
 #include <sys/types.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
@@ -79,7 +78,7 @@ int main(int argc, char *argv[])
     int counter = 0, i;
 
     if (argc < 1) {
-	fprintf(stderr, "hdxml2manxml: No arguments given.\n");
+	fprintf(stderr, "xml2man: No arguments given.\n");
 	exit(-1);
     }
 
@@ -100,8 +99,7 @@ int main(int argc, char *argv[])
 	    addr = mmap(NULL, (len=sb.st_size), PROT_READ, MAP_FILE, fd, 0);
 	    if (!(dp = xmlParseMemory(addr, len))) {
 		perror(argv[0]);
-		fprintf(stderr, "hdxml2manxml: could not parse XML file\n");
-		exit(-1);
+		fprintf(stderr, "xml2man: could not parse XML file\n");
 	    } else {
 		processfile(argv[i], dp, 0);
 		xmlFreeDoc(dp);
@@ -121,18 +119,13 @@ int main(int argc, char *argv[])
 	    len = strlen(line);
 	    while ((bufpos + len + 2) >= bufsize) {
 		bufsize *= 2;
-		if (!(buf = realloc(buf, bufsize))) {
-			perror(argv[0]);
-			fprintf(stderr, "hdxml2manxml: Could not allocate memory.\n");
-			exit(-1);
-		}
+		buf = realloc(buf, bufsize);
 	    }
-	    bcopy(line, &buf[bufpos], strlen(line));
+	    strcat(&buf[bufpos], line);
 	    bufpos += len;
 	}
-	buf[bufpos] = '\0';
-	dp = xmlParseMemory(buf, bufpos);
-	processfile("stdin", dp, counter);
+	xmlParseMemory(buf, bufpos+1);
+	processfile(argv[i], dp, counter);
 	xmlFreeDoc(dp);
 	xmlCleanupParser();
     }
@@ -182,6 +175,8 @@ void write_crossrefs(xmlDocPtr dp, FILE *fp, xmlNode *root);
 int hdxml2man(xmlDocPtr dp,xmlNode *root, char *output_filename)
 {
     int section;
+    xmlNode *names, *usage, *retvals, *env, *files, *examples, *diags, *errs;
+    xmlNode *seeAlso, *conformingTo, *history, *bugs;
     char datebuf[22];
     char *docdate = NULL;
     char *doctitle = "UNKNOWN MANPAGE";
@@ -218,7 +213,7 @@ int hdxml2man(xmlDocPtr dp,xmlNode *root, char *output_filename)
     if (!strlen(output_filename)) {
 	fp = stdout;
     } else {
-	if ((fp = fopen(output_filename, "r"))) {
+	if (fp = fopen(output_filename, "r")) {
 	    fprintf(stderr, "error: file %s exists.\n", output_filename);
 	    fclose(fp);
 	    return(-1);
@@ -396,7 +391,7 @@ xmlNode *nodematching(char *name, xmlNode *cur, int recurse)
         if (!cur->name) break;
         if (!strcmp(cur->name, name)) break;
         if (recurse) {
-                if ((temp=nodematching(name, cur->children, recurse))) {
+                if (temp=nodematching(name, cur->children, recurse)) {
                         return temp;
                 }
         }
@@ -416,6 +411,7 @@ struct nodelistitem *nodelist(char *name, xmlNode *root)
 
 void nodelist_rec(char *name, xmlNode *cur, struct nodelistitem **nl)
 {
+    xmlNode *temp = NULL;
     struct nodelistitem *nli = NULL;
 
     if (!cur) return;
@@ -548,7 +544,7 @@ char *striplines(char *line)
 
 void write_crossrefs(xmlDocPtr dp, FILE *fp, xmlNode *root)
 {
-    // xmlNode *node;
+    xmlNode *node;
 
     /* For now, there's nothing to do here. */
 

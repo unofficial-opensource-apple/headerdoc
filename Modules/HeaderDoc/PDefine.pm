@@ -5,7 +5,7 @@
 #           are used to comment symbolic constants declared with #define
 #
 # Author: Matt Morse (matt@apple.com)
-# Last Updated: $Date: 2004/06/13 04:59:12 $
+# Last Updated: $Date: 2004/02/09 18:37:23 $
 # 
 # Copyright (c) 1999-2004 Apple Computer, Inc.  All rights reserved.
 #
@@ -52,10 +52,8 @@ sub _initialize {
     my($self) = shift;
 
     $self->SUPER::_initialize();
-    # $self->{ISBLOCK} = 0;
-    # $self->{RESULT} = undef;
-    $self->{PARSETREELIST} = ();
-    $self->{CLASS} = "HeaderDoc::PDefine";
+    $self->{ISBLOCK} = 0;
+    $self->{RESULT} = undef;
 }
 
 sub clone {
@@ -73,25 +71,21 @@ sub clone {
 
     $clone->{ISBLOCK} = $self->{ISBLOCK};
     $clone->{RESULT} = $self->{RESULT};
-    $clone->{PARSETREELIST} = $self->{PARSETREELIST};
 
     return $clone;
 }
 
 
-sub processComment {
+sub processPDefineComment {
     my $localDebug = 0;
     my($self) = shift;
     my $fieldArrayRef = shift;
     my @fields = @$fieldArrayRef;
-    my $filename = $self->filename();
-    my $linenum = $self->linenum();
-
 	foreach my $field (@fields) {
         chomp($field);
 		SWITCH: {
-            ($field =~ /^\/\*\!/o)&& do {last SWITCH;}; # ignore opening /*!
-            ($field =~ s/^define(d)?(\s+)//o || $field =~ s/^function\s+//o) && do {
+            ($field =~ /^\/\*\!/)&& do {last SWITCH;}; # ignore opening /*!
+            ($field =~ s/^define(d)?(\s+)// || $field =~ s/^function\s+//) && do {
 		    if (length($2)) { $field = "$2$field"; }
 		    else { $field = "$1$field"; }
 		    my ($defname, $defabstract_or_disc) = getAPINameAndDisc($field);
@@ -110,7 +104,7 @@ sub processComment {
 		    }
 		    last SWITCH;
 		};
-            ($field =~ s/^define(d)?block(\s+)//o) && do {
+            ($field =~ s/^define(d)?block(\s+)//) && do {
 		    if (length($2)) { $field = "$2$field"; }
 		    else { $field = "$1$field"; }
 		    my ($defname, $defdisc) = getAPINameAndDisc($field);
@@ -119,18 +113,18 @@ sub processComment {
 		    $self->discussion($defdisc);
 		    last SWITCH;
 		};
-            ($field =~ s/^abstract\s+//o) && do {$self->abstract($field); last SWITCH;};
-            ($field =~ s/^discussion\s+//o) && do {$self->discussion($field); last SWITCH;};
-            ($field =~ s/^availability\s+//o) && do {$self->availability($field); last SWITCH;};
-            ($field =~ s/^since\s+//o) && do {$self->availability($field); last SWITCH;};
-            ($field =~ s/^author\s+//o) && do {$self->attribute("Author", $field, 0); last SWITCH;};
-	    ($field =~ s/^version\s+//o) && do {$self->attribute("Version", $field, 0); last SWITCH;};
-            ($field =~ s/^deprecated\s+//o) && do {$self->attribute("Deprecated", $field, 0); last SWITCH;};
-            ($field =~ s/^updated\s+//o) && do {$self->updated($field); last SWITCH;};
-            ($field =~ s/^param\s+//o) && do {
-                    $field =~ s/^\s+|\s+$//go; # trim leading and trailing whitespace
-                    # $field =~ /(\w*)\s*(.*)/so;
-                    $field =~ /(\S*)\s*(.*)/so;
+            ($field =~ s/^abstract\s+//) && do {$self->abstract($field); last SWITCH;};
+            ($field =~ s/^discussion\s+//) && do {$self->discussion($field); last SWITCH;};
+            ($field =~ s/^availability\s+//) && do {$self->availability($field); last SWITCH;};
+            ($field =~ s/^since\s+//) && do {$self->availability($field); last SWITCH;};
+            ($field =~ s/^author\s+//) && do {$self->attribute("Author", $field, 0); last SWITCH;};
+	    ($field =~ s/^version\s+//) && do {$self->attribute("Version", $field, 0); last SWITCH;};
+            ($field =~ s/^deprecated\s+//) && do {$self->attribute("Deprecated", $field, 0); last SWITCH;};
+            ($field =~ s/^updated\s+//) && do {$self->updated($field); last SWITCH;};
+            ($field =~ s/^param\s+//) && do {
+                    $field =~ s/^\s+|\s+$//g; # trim leading and trailing whitespace
+                    # $field =~ /(\w*)\s*(.*)/s;
+                    $field =~ /(\S*)\s*(.*)/s;
                     my $pName = $1;
                     my $pDesc = $2;
                     my $param = HeaderDoc::MinorAPIElement->new();
@@ -139,54 +133,17 @@ sub processComment {
                     $self->addTaggedParameter($param);
                                 last SWITCH;
 		};
-	    ($field =~ s/^attribute\s+//o) && do {
-		    my ($attname, $attdisc) = &getAPINameAndDisc($field);
-		    if (length($attname) && length($attdisc)) {
-			$self->attribute($attname, $attdisc, 0);
-		    } else {
-			warn "$filename:$linenum:Missing name/discussion for attribute\n";
-		    }
-		    last SWITCH;
-		};
-	    ($field =~ s/^attributelist\s+//o) && do {
-		    $field =~ s/^\s*//so;
-		    $field =~ s/\s*$//so;
-		    my ($name, $lines) = split(/\n/, $field, 2);
-		    $name =~ s/^\s*//so;
-		    $name =~ s/\s*$//so;
-		    $lines =~ s/^\s*//so;
-		    $lines =~ s/\s*$//so;
-		    if (length($name) && length($lines)) {
-			my @attlines = split(/\n/, $lines);
-			foreach my $line (@attlines) {
-			    $self->attributelist($name, $line);
-			}
-		    } else {
-			warn "$filename:$linenum:Missing name/discussion for attributelist\n";
-		    }
-		    last SWITCH;
-		};
-	    ($field =~ s/^attributeblock\s+//o) && do {
-		    my ($attname, $attdisc) = &getAPINameAndDisc($field);
-		    if (length($attname) && length($attdisc)) {
-			$self->attribute($attname, $attdisc, 1);
-		    } else {
-			warn "$filename:$linenum:Missing name/discussion for attributeblock\n";
-		    }
-		    last SWITCH;
-		};
-	    ($field =~ /^see(also|)\s+/o) &&
+	    ($field =~ /^see(also|)\s+/) &&
 		do {
 		    $self->see($field);
 		    last SWITCH;
 		};
-	    ($field =~ s/^return\s+//o) && do {$self->result($field); last SWITCH;};
-	    ($field =~ s/^result\s+//o) && do {$self->result($field); last SWITCH;};
+	    ($field =~ s/^return\s+//) && do {$self->result($field); last SWITCH;};
+	    ($field =~ s/^result\s+//) && do {$self->result($field); last SWITCH;};
 	    # my $filename = $HeaderDoc::headerObject->name();
 	    my $filename = $self->filename();
 	    my $linenum = $self->linenum();
-            # print "$filename:$linenum:Unknown field in #define comment: $field\n";
-		if (length($field)) { warn "$filename:$linenum:Unknown field (\@$field) in #define comment (".$self->name().")\n"; }
+            print "$filename:$linenum:Unknown field in #define comment: $field\n";
 		}
 	}
 }
@@ -197,14 +154,23 @@ sub setPDefineDeclaration {
     my $localDebug = 0;
     $self->declaration($dec);
     my $filename = $self->filename();
-    my $line = $self->linenum();
+    my $line = 0;
 
-    # if ($dec =~ /#define.*#define/so && !($self->isBlock)) {
+    # if ($dec =~ /#define.*#define/s && !($self->isBlock)) {
 	# warn("$filename:$line:WARNING: Multiple #defines in \@define.  Use \@defineblock instead.\n");
     # }
     
     print "============================================================================\n" if ($localDebug);
     print "Raw #define declaration is: $dec\n" if ($localDebug);
+    
+    $dec =~ s/^\s+//;
+    $dec =~ s/\t/ /g;
+    $dec =~ s/</&lt;/g;
+    $dec =~ s/>/&gt;/g;
+
+    if (length ($dec)) {$dec = "<pre>\n$dec</pre>\n";};
+    print "#define: returning declaration:\n\t|$dec|\n" if ($localDebug);
+    print "============================================================================\n" if ($localDebug);
     $self->declarationInHTML($dec);
     return $dec;
 }
@@ -217,6 +183,41 @@ sub isBlock {
     }
 
     return $self->{ISBLOCK};
+}
+
+
+sub XMLdocumentationBlock {
+    my $self = shift;
+    my $name = $self->name();
+    my $desc = $self->discussion();
+    my $declaration = $self->declarationInHTML();
+    my $abstract = $self->abstract();
+    my $availability = $self->availability();
+    my $updated = $self->updated();
+    my $group = $self->group();
+    my $result = $self->result();
+    my $contentString;
+ 
+    $contentString .= "<define id=\"$name\">\n";
+    if (length($abstract)) {
+        $contentString .= "<abstract>$abstract</abstract>\n";
+    }
+    if (length($availability)) {
+        $contentString .= "<availability>$availability</availability>\n";
+    }
+    if (length($updated)) {
+        $contentString .= "<updated>$updated</updated>\n";
+    }
+    if (length($group)) {
+	$contentString .= "<group>$group</group>\n";
+    }
+    $contentString .= "<declaration>$declaration</declaration>\n";
+    $contentString .= "<description>$desc</description>\n";
+    if (length($result)) {
+        $contentString .= "<result>$result</result>\n";
+    }
+    $contentString .= "</define>\n";
+    return $contentString;
 }
 
 
@@ -237,29 +238,6 @@ sub printObject {
     $self->SUPER::printObject();
     print "Result: $self->{RESULT}\n";
     print "\n";
-}
-
-sub parseTreeList
-{
-    my $self = shift;
-    my $localDebug = 0;
-
-    if ($localDebug) {
-      print "OBJ ".$self->name().":\n";
-      foreach my $tree (@{$self->{PARSETREELIST}}) {
-	print "PARSE TREE: $tree\n";
-      }
-    }
-
-    return $self->{PARSETREELIST};
-}
-
-sub addParseTree
-{
-    my $self = shift;
-    my $tree = shift;
-
-    push(@{$self->{PARSETREELIST}}, $tree);
 }
 
 1;

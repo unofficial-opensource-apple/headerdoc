@@ -5,7 +5,7 @@
 #           is to hold info for data export to Inside Mac Database
 #
 # Author: Matt Morse (matt@apple.com)
-# Last Updated: $Date: 2004/06/13 04:59:12 $
+# Last Updated: $Date: 2004/02/19 22:56:33 $
 #
 # Copyright (c) 1999-2004 Apple Computer, Inc.  All rights reserved.
 #
@@ -53,11 +53,9 @@ sub new {
 sub _initialize {
     my($self) = shift;
     $self->SUPER::_initialize();
-    # $self->{POSITION} = undef;
-    # $self->{TYPE} = undef;
+    $self->{POSITION} = undef;
+    $self->{TYPE} = undef;
     $self->{USERDICTARRAY} = ();
-    # $self->{HIDDEN} = 0;
-    $self->{CLASS} = "HeaderDoc::MinorAPIElement";
 }
 
 sub clone {
@@ -75,7 +73,6 @@ sub clone {
 
     $clone->{POSITION} = $self->{POSITION};
     $clone->{TYPE} = $self->{TYPE};
-    $clone->{HIDDEN} = $self->{HIDDEN};
     $clone->{USERDICTARRAY} = $self->{USERDICTARRAY};
 
     return $clone;
@@ -89,15 +86,6 @@ sub position {
         $self->{POSITION} = shift;
     }
     return $self->{POSITION};
-}
-
-sub hidden {
-    my $self = shift;
-
-    if (@_) {
-        $self->{HIDDEN} = shift;
-    }
-    return $self->{HIDDEN};
 }
 
 sub type {

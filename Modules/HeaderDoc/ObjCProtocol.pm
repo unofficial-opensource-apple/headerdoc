@@ -7,7 +7,7 @@
 # Initial modifications: SKoT McDonald <skot@tomandandy.com> Aug 2001
 #
 # Based on CPPClass by Matt Morse (matt@apple.com)
-# Last Updated: $Date: 2004/06/10 22:12:16 $
+# Last Updated: $Date: 2004/02/09 19:35:19 $
 # 
 # Copyright (c) 1999-2004 Apple Computer, Inc.  All rights reserved.
 #
@@ -51,7 +51,7 @@ $VERSION = '1.20';
 ################ Portability ###################################
 my $isMacOS;
 my $pathSeparator;
-if ($^O =~ /MacOS/io) {
+if ($^O =~ /MacOS/i) {
 	$pathSeparator = ":";
 	$isMacOS = 1;
 } else {
@@ -75,7 +75,6 @@ sub _initialize {
     my($self) = shift;
     $self->SUPER::_initialize();
     $self->tocTitlePrefix('Protocol:');
-    $self->{CLASS} = "HeaderDoc::ObjCProtocol";
 }
 
 sub getMethodType {
@@ -88,9 +87,9 @@ sub getMethodType {
 sub docNavigatorComment {
     my $self = shift;
     my $name = $self->name();
-    $name =~ s/;//sgo;
+    $name =~ s/;//sg;
+    my $navComment = "<!-- headerDoc=intf; name=$name-->";
     my $uid = $self->apiuid("intf"); # "//apple_ref/occ/intf/$name";
-    my $navComment = "<!-- headerDoc=intf; uid=$uid; name=$name-->";
     my $appleRef = "<a name=\"$uid\"></a>";
     
     return "$navComment\n$appleRef";

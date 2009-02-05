@@ -5,7 +5,7 @@
 #
 #
 # Author: Matt Morse (matt@apple.com)
-# Last Updated: $Date: 2004/06/10 22:12:16 $
+# Last Updated: $Date: 2004/02/09 19:35:19 $
 # 
 # Copyright (c) 1999-2004 Apple Computer, Inc.  All rights reserved.
 #
@@ -49,7 +49,7 @@ $VERSION = '1.20';
 ################ Portability ###################################
 my $isMacOS;
 my $pathSeparator;
-if ($^O =~ /MacOS/io) {
+if ($^O =~ /MacOS/i) {
 	$pathSeparator = ":";
 	$isMacOS = 1;
 } else {
@@ -73,7 +73,6 @@ sub _initialize {
     my($self) = shift;
     $self->SUPER::_initialize();
     $self->tocTitlePrefix('Class:');
-    $self->{CLASS} = "HeaderDoc::ObjCContainer";
 }
 
 sub _getCompositePageString { 
@@ -81,8 +80,6 @@ sub _getCompositePageString {
     my $name = $self->name();
     my $compositePageString;
     my $contentString;
-
-    $compositePageString .= $self->compositePageAPIRef();
 
     my $abstract = $self->abstract();
     if (length($abstract)) {
@@ -96,38 +93,121 @@ sub _getCompositePageString {
 	    $compositePageString .= $discussion;
     }
     
-    # if ((length($abstract)) || (length($discussion))) {
-    # ALWAYS....
+    if ((length($abstract)) || (length($discussion))) {
 	    $compositePageString .= "<hr><br>";
-    # }
-
-    my $etoc = $self->_getClassEmbeddedTOC(1);
-    if (length($etoc)) {
-	$compositePageString .= $etoc;
-	$compositePageString .= "<hr><br>";
     }
 
     $contentString= $self->_getMethodDetailString(1);
     if (length($contentString)) {
 	    $compositePageString .= "<h2>Methods</h2>\n";
-		# $contentString = $self->stripAppleRefs($contentString);
+		$contentString = $self->stripAppleRefs($contentString);
 	    $compositePageString .= $contentString;
     }
 
     $contentString= $self->_getVarDetailString();
     if (length($contentString)) {
 	    $compositePageString .= "<h2>Variables</h2>\n";
-		# $contentString = $self->stripAppleRefs($contentString);
+		$contentString = $self->stripAppleRefs($contentString);
 	    $compositePageString .= $contentString;
     }
 
     $contentString= $self->_getConstantDetailString();
     if (length($contentString)) {
 	    $compositePageString .= "<h2>Constants</h2>\n";
-		# $contentString = $self->stripAppleRefs($contentString);
+		$contentString = $self->stripAppleRefs($contentString);
 	    $compositePageString .= $contentString;
     }
     
+    return $compositePageString;
+}
+
+sub XMLdocumentationBlock {
+    my $self = shift;
+    my $compositePageString = "";
+    my $name = $self->name();    
+    my $abstract = $self->abstract();
+    my $discussion = $self->discussion();
+    my $updated = $self->updated();
+    my $group = $self->group();
+    my $contentString;
+
+    if ($self->tocTitlePrefix() eq "Class:") {
+	$compositePageString .= "<class type=\"objC\">";
+    } else {
+	$compositePageString .= "<category type=\"objC\">";
+    }
+
+    if (length($name)) {
+	$compositePageString .= "<name>$name</name>\n";
+    }
+    if (length($updated)) {
+	$contentString .= "<updated>$updated</updated>\n";
+    }
+    if (length($group)) {
+	$contentString .= "<group>$group</group>\n";
+    }
+
+    if (length($abstract)) {
+	$compositePageString .= "<abstract>$abstract</abstract>\n";
+    }
+    if (length($discussion)) {
+	$compositePageString .= "<discussion>$discussion</discussion>\n";
+    }
+
+    $contentString= $self->_getFunctionXMLDetailString();
+    if (length($contentString)) {
+	$contentString = $self->stripAppleRefs($contentString);
+	$compositePageString .= "<functions>$contentString</functions>\n";
+    }
+
+    $contentString= $self->_getMethodXMLDetailString();
+    if (length($contentString)) {
+	$contentString = $self->stripAppleRefs($contentString);
+	$compositePageString .= "<methods>$contentString</methods>\n";
+    }
+
+    $contentString= $self->_getVarXMLDetailString();
+    if (length($contentString)) {
+	$contentString = $self->stripAppleRefs($contentString);
+	$compositePageString .= "<globals>$contentString</globals>\n";
+    }
+
+    $contentString= $self->_getConstantXMLDetailString();
+    if (length($contentString)) {
+	$contentString = $self->stripAppleRefs($contentString);
+	$compositePageString .= "<constants>$contentString</constants>\n";
+    }
+   
+    $contentString= $self->_getTypedefXMLDetailString();
+    if (length($contentString)) {      
+	$contentString = $self->stripAppleRefs($contentString);
+	$compositePageString .= "<typedefs>$contentString</typedefs>";
+    }
+
+    $contentString= $self->_getStructXMLDetailString();
+    if (length($contentString)) {
+	$contentString = $self->stripAppleRefs($contentString);
+	$compositePageString .= "<structs>$contentString</structs>";
+    }
+
+    $contentString= $self->_getEnumXMLDetailString();
+    if (length($contentString)) {
+	$contentString = $self->stripAppleRefs($contentString);
+	$compositePageString .= "<enums>$contentString</enums>";
+    }
+
+    $contentString= $self->_getPDefineXMLDetailString();
+    if (length($contentString)) {
+	$contentString = $self->stripAppleRefs($contentString);
+	$compositePageString .= "<defines>$contentString</defines>";
+    }
+
+    if ($self->tocTitlePrefix() eq "Class:") {
+	$compositePageString .= "</class>";
+    } else {
+	$compositePageString .= "</category>";
+    }
+
     return $compositePageString;
 }
 
@@ -140,9 +220,9 @@ sub getMethodPrefix {
 	
 	$type = $obj->isInstanceMethod();
 	
-	if ($type =~ /YES/o) {
+	if ($type =~ /YES/) {
 	    $prefix = "- ";
-	} elsif ($type =~ /NO/o) {
+	} elsif ($type =~ /NO/) {
 	    $prefix = "+ ";
 	} else {
 	    $prefix = "";
@@ -154,7 +234,7 @@ sub getMethodPrefix {
 sub docNavigatorComment {
     my $self = shift;
     my $name = $self->name();
-    $name =~ s/;//sgo;
+    $name =~ s/;//sg;
     
     return "<!-- headerDoc=cl; name=$name-->";
 }

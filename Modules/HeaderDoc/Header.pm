@@ -4,7 +4,7 @@
 # Synopsis: Holds header-wide comments parsed by headerDoc
 #
 # Author: Matt Morse (matt@apple.com)
-# Last Updated: $Date: 2004/06/13 04:59:12 $
+# Last Updated: $Date: 2004/02/09 19:35:19 $
 # 
 # Copyright (c) 1999-2004 Apple Computer, Inc.  All rights reserved.
 #
@@ -36,7 +36,7 @@ BEGIN {
     }
 }
 
-use HeaderDoc::Utilities qw(findRelativePath safeName getAPINameAndDisc convertCharsForFileMaker printArray printHash sanitize);
+use HeaderDoc::Utilities qw(findRelativePath safeName getAPINameAndDisc convertCharsForFileMaker printArray printHash);
 use HeaderDoc::APIOwner;
 
 use strict;
@@ -48,7 +48,7 @@ $VERSION = '1.20';
 ################ Portability ###################################
 my $isMacOS;
 my $pathSeparator;
-if ($^O =~ /MacOS/io) {
+if ($^O =~ /MacOS/i) {
 	$pathSeparator = ":";
 	$isMacOS = 1;
 } else {
@@ -78,16 +78,15 @@ sub _initialize {
     $self->SUPER::_initialize();
 
     $self->{CLASSES} = ();
-    # $self->{CLASSESDIR} = undef;
-    # $self->{UPDATED}= undef;
+    $self->{CLASSESDIR} = undef;
+    $self->{UPDATED}= undef;
     $self->{COPYRIGHT}= "";
     $self->{HTMLMETA}= "";
     $self->{CATEGORIES}= ();
-    # $self->{CATEGORIESDIR} = undef;
+    $self->{CATEGORIESDIR} = undef;
     $self->{PROTOCOLS}= ();
-    # $self->{PROTOCOLSDIR} = undef;
-    # $self->{CURRENTCLASS} = undef;
-    $self->{CLASS} = "HeaderDoc::Header";
+    $self->{PROTOCOLSDIR} = undef;
+    $self->{CURRENTCLASS} = undef;
     
     $self->tocTitlePrefix('Header:');
 }
@@ -214,9 +213,9 @@ sub updated {
 	$month = $day = $year = $updated;
 
 	print "updated is $updated\n" if ($localDebug);
-	if (!($updated =~ /\d\d\d\d-\d\d-\d\d/o )) {
-	    if (!($updated =~ /\d\d-\d\d-\d\d\d\d/o )) {
-		if (!($updated =~ /\d\d-\d\d-\d\d/o )) {
+	if (!($updated =~ /\d\d\d\d-\d\d-\d\d/ )) {
+	    if (!($updated =~ /\d\d-\d\d-\d\d\d\d/ )) {
+		if (!($updated =~ /\d\d-\d\d-\d\d/ )) {
 		    # my $filename = $HeaderDoc::headerObject->filename();
 		    my $filename = $self->filename();
 		    my $linenum = $self->linenum();
@@ -224,9 +223,9 @@ sub updated {
 		    print "Valid formats are MM-DD-YYYY, MM-DD-YY, and YYYY-MM-DD\n";
 		    return $self->{UPDATED};
 		} else {
-		    $month =~ s/(\d\d)-\d\d-\d\d/$1/smog;
-		    $day =~ s/\d\d-(\d\d)-\d\d/$1/smog;
-		    $year =~ s/\d\d-\d\d-(\d\d)/$1/smog;
+		    $month =~ s/(\d\d)-\d\d-\d\d/$1/smg;
+		    $day =~ s/\d\d-(\d\d)-\d\d/$1/smg;
+		    $year =~ s/\d\d-\d\d-(\d\d)/$1/smg;
 
 		    my $century;
 		    $century = `date +%C`;
@@ -237,21 +236,21 @@ sub updated {
 		}
 	    } else {
 		print "03-25-2003 case.\n" if ($localDebug);
-		    $month =~ s/(\d\d)-\d\d-\d\d\d\d/$1/smog;
-		    $day =~ s/\d\d-(\d\d)-\d\d\d\d/$1/smog;
-		    $year =~ s/\d\d-\d\d-(\d\d\d\d)/$1/smog;
+		    $month =~ s/(\d\d)-\d\d-\d\d\d\d/$1/smg;
+		    $day =~ s/\d\d-(\d\d)-\d\d\d\d/$1/smg;
+		    $year =~ s/\d\d-\d\d-(\d\d\d\d)/$1/smg;
 	    }
 	} else {
-		    $year =~ s/(\d\d\d\d)-\d\d-\d\d/$1/smog;
-		    $month =~ s/\d\d\d\d-(\d\d)-\d\d/$1/smog;
-		    $day =~ s/\d\d\d\d-\d\d-(\d\d)/$1/smog;
+		    $year =~ s/(\d\d\d\d)-\d\d-\d\d/$1/smg;
+		    $month =~ s/\d\d\d\d-(\d\d)-\d\d/$1/smg;
+		    $day =~ s/\d\d\d\d-\d\d-(\d\d)/$1/smg;
 	}
-	$month =~ s/\n*//smog;
-	$day =~ s/\n*//smog;
-	$year =~ s/\n*//smog;
-	$month =~ s/\s*//smog;
-	$day =~ s/\s*//smog;
-	$year =~ s/\s*//smog;
+	$month =~ s/\n*//smg;
+	$day =~ s/\n*//smg;
+	$year =~ s/\n*//smg;
+	$month =~ s/\s*//smg;
+	$day =~ s/\s*//smg;
+	$year =~ s/\s*//smg;
 
 	# Check the validity of the modification date
 
@@ -358,20 +357,20 @@ sub HTMLmeta {
     if (@_) {
 	my $text = shift;
 
-	if ($text =~ /=/o) {
+	if ($text =~ /=/) {
 		# @meta blah="blah" this="that"
 		#    becomes
 		# <meta blah="blah" this="that">
-		$text =~ s/\n.*//smog;
+		$text =~ s/\n.*//smg;
 		$self->{HTMLMETA} .= "<meta $text>\n";
 	} else {
 		# @meta nameparm contentparm
 		#    becomes
 		# <meta name="nameparm" content="contentparm">
-		$text =~ /^(.*?)\s/o;
+		$text =~ /^(.*?)\s/;
 		my $name = $1;
 		$text =~ s/^$name\s+//;
-		$text =~ s/\n.*//smog;
+		$text =~ s/\n.*//smg;
 
 		$self->{HTMLMETA} .= "<meta name=\"$name\" content=\"$text\">\n";
 	}
@@ -395,14 +394,16 @@ sub metaFileText {
 	$text .= "<string>$title HeaderDoc Reference</string>\n";
     }
     $text .= "<key>WriterEmail</key>\n";
-    $text .= "<string>techpubs\@group.apple.com</string>\n";
+    $text .= "<key>techpubs\@group.apple.com</key>\n";
+    $text .= "<key>ProductionEmail</key>\n";
+    $text .= "<key></key>\n";
     $text .= "<key>EDD_Name</key>\n";
     $text .= "<string>ProceduralC.EDD</string>\n";
     $text .= "<key>EDD_Version</key>\n";
     $text .= "<string>3.31</string>\n";
     $text .= "<key>ReleaseDateFooter</key>\n";
     my $date = `date +"%B %Y"`;
-    $date =~ s/\n//smog;
+    $date =~ s/\n//smg;
     $text .= "<string>$date</string>\n";
     $text .= "</dict>\n";
     $text .= "</plist>\n";
@@ -478,7 +479,7 @@ sub writeClasses {
         if (1 || $isMacOS) {$className = &safeName(filename => $className);};
         $obj->outputDir("$classRootDir$pathSeparator$className");
         $obj->createFramesetFile();
-        $obj->createContentFile() if (!$HeaderDoc::ClassAsComposite);
+        $obj->createContentFile();
         $obj->createTOCFile();
         $obj->writeHeaderElements(); 
     }
@@ -501,7 +502,7 @@ sub writeProtocols {
         if (1 || $isMacOS) {$protocolName = &safeName(filename => $protocolName);};
         $obj->outputDir("$protocolsRootDir$pathSeparator$protocolName");
         $obj->createFramesetFile();
-        $obj->createContentFile() if (!$HeaderDoc::ClassAsComposite);
+        $obj->createContentFile();
         $obj->createTOCFile();
         $obj->writeHeaderElements(); 
     }
@@ -524,7 +525,7 @@ sub writeCategories {
         if (1 || $isMacOS) {$categoryName = &safeName(filename => $categoryName);};
         $obj->outputDir("$categoriesRootDir$pathSeparator$categoryName");
         $obj->createFramesetFile();
-        $obj->createContentFile() if (!$HeaderDoc::ClassAsComposite);
+        $obj->createContentFile();
         $obj->createTOCFile();
         $obj->writeHeaderElements(); 
     }
@@ -534,17 +535,12 @@ sub writeCategories {
 sub docNavigatorComment {
     my $self = shift;
     my $name = $self->name();
-    $name =~ s/;//sgo;
-    my $shortname = $self->filename();
-    $shortname =~ s/\.hdoc$//so;
-    $shortname = sanitize($shortname);
+    $name =~ s/;//sg;
     
     if ($self->isFramework()) {
-	# Don't insert a UID.  It will go on the landing page.
-	return "<!-- headerDoc=Framework; shortname=$shortname; name=$name-->";
+	return "<!-- headerDoc=Framework; name=$name-->";
     } else {
-	# return "<!-- headerDoc=Header; name=$name-->";
-	return $self->apiref(0, "Header");
+	return "<!-- headerDoc=Header; name=$name-->";
     }
 }
 

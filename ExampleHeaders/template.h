@@ -63,13 +63,6 @@ class correlate
 	 */
 	bool insert(FOO, BAR);
 
-	/*! @function commatest
-	    @abstract Watch for extra line breaks
-	 */
-	virtual bool CreateItemWithIdentifier(const ACFString &inIdentifier,
-		const AEventParaneter<CFTypeRef> &inConfigData,
-		AEventParameter<HIToolbarItemRef,AWriteOnly> &outItem);
-
 	/*! @function S3Handle
 	    @discussion Hmm.
 	    @templatefield FOO the foo type.

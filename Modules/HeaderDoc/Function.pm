@@ -4,7 +4,7 @@
 # Synopsis: Holds function info parsed by headerDoc
 #
 # Author: Matt Morse (matt@apple.com)
-# Last Updated: $Date: 2004/06/13 04:59:12 $
+# Last Updated: $Date: 2004/02/05 07:01:48 $
 # 
 # Copyright (c) 1999-2004 Apple Computer, Inc.  All rights reserved.
 #
@@ -56,9 +56,8 @@ sub _initialize {
     my($self) = shift;
 
     $self->SUPER::_initialize();
-    # $self->{RESULT} = undef;
-    # $self->{CONFLICT} = 0;
-    $self->{CLASS} = "HeaderDoc::Function";
+    $self->{RESULT} = undef;
+    $self->{CONFLICT} = 0;
 }
 
 sub clone {
@@ -91,37 +90,14 @@ sub result {
 }
 
 
-sub getParamSignature
-{
-    my $self = shift;
-
-    my @params = $self->parsedParameters();
-    my $signature = "";
-
-    foreach my $param (@params) {
-	bless($param, "HeaderDoc::HeaderElement");
-	bless($param, $param->class());
-	my $name = $param->name();
-	my $type = $param->type();
-	$type =~ s/\s//sgo;
-	$signature .= $type;
-    }
-
-    return $signature;
-}
-
-
-sub processComment {
+sub processFunctionComment {
     my $self = shift;
     my $fieldArrayRef = shift;
     my @fields = @$fieldArrayRef;
-    my $filename = $self->filename();
-    my $linenum = $self->linenum();
-
 	foreach my $field (@fields) {
 		SWITCH: {
-			($field =~ /^\/\*\!/o)&& do {last SWITCH;}; # ignore opening /*!
-			($field =~ s/^method(\s+)/$1/o) && 
+			($field =~ /^\/\*\!/)&& do {last SWITCH;}; # ignore opening /*!
+			($field =~ s/^method(\s+)/$1/) && 
 			do {
 				my ($name, $disc);
 				($name, $disc) = &getAPINameAndDisc($field); 
@@ -129,7 +105,7 @@ sub processComment {
 				if (length($disc)) {$self->discussion($disc);};
 				last SWITCH;
 			};
-			($field =~ s/^function(\s+)/$1/o) && 
+			($field =~ s/^function(\s+)/$1/) && 
 			do {
 				my ($name, $disc);
 				($name, $disc) = &getAPINameAndDisc($field); 
@@ -137,67 +113,31 @@ sub processComment {
 				if (length($disc)) {$self->discussion($disc);};
 				last SWITCH;
 			};
-			($field =~ s/^serialData\s+//io) && do {$self->attribute("Serial Data", $field, 1); last SWITCH;};
-			($field =~ s/^abstract\s+//o) && do {$self->abstract($field); last SWITCH;};
-			($field =~ s/^throws\s+//o) && do {$self->throws($field); last SWITCH;};
-			($field =~ s/^exception\s+//o) && do {$self->throws($field); last SWITCH;};
-			($field =~ s/^availability\s+//o) && do {$self->availability($field); last SWITCH;};
-            		($field =~ s/^since\s+//o) && do {$self->availability($field); last SWITCH;};
-            		($field =~ s/^author\s+//o) && do {$self->attribute("Author", $field, 0); last SWITCH;};
-			($field =~ s/^version\s+//o) && do {$self->attribute("Version", $field, 0); last SWITCH;};
-            		($field =~ s/^deprecated\s+//o) && do {$self->attribute("Deprecated", $field, 0); last SWITCH;};
-			($field =~ s/^updated\s+//o) && do {$self->updated($field); last SWITCH;};
-	    ($field =~ s/^attribute\s+//o) && do {
-		    my ($attname, $attdisc) = &getAPINameAndDisc($field);
-		    if (length($attname) && length($attdisc)) {
-			$self->attribute($attname, $attdisc, 0);
-		    } else {
-			warn "$filename:$linenum:Missing name/discussion for attribute\n";
-		    }
-		    last SWITCH;
-		};
-	    ($field =~ s/^attributelist\s+//o) && do {
-		    $field =~ s/^\s*//so;
-		    $field =~ s/\s*$//so;
-		    my ($name, $lines) = split(/\n/, $field, 2);
-		    $name =~ s/^\s*//so;
-		    $name =~ s/\s*$//so;
-		    $lines =~ s/^\s*//so;
-		    $lines =~ s/\s*$//so;
-		    if (length($name) && length($lines)) {
-			my @attlines = split(/\n/, $lines);
-			foreach my $line (@attlines) {
-			    $self->attributelist($name, $line);
-			}
-		    } else {
-			warn "$filename:$linenum:Missing name/discussion for attributelist\n";
-		    }
-		    last SWITCH;
-		};
-	    ($field =~ s/^attributeblock\s+//o) && do {
-		    my ($attname, $attdisc) = &getAPINameAndDisc($field);
-		    if (length($attname) && length($attdisc)) {
-			$self->attribute($attname, $attdisc, 1);
-		    } else {
-			warn "$filename:$linenum:Missing name/discussion for attributeblock\n";
-		    }
-		    last SWITCH;
-		};
-			($field =~ /^see(also|)\s+/o) &&
+			($field =~ s/^serialData\s+//i) && do {$self->attribute("Serial Data", $field, 1); last SWITCH;};
+			($field =~ s/^abstract\s+//) && do {$self->abstract($field); last SWITCH;};
+			($field =~ s/^throws\s+//) && do {$self->throws($field); last SWITCH;};
+			($field =~ s/^exception\s+//) && do {$self->throws($field); last SWITCH;};
+			($field =~ s/^availability\s+//) && do {$self->availability($field); last SWITCH;};
+            		($field =~ s/^since\s+//) && do {$self->availability($field); last SWITCH;};
+            		($field =~ s/^author\s+//) && do {$self->attribute("Author", $field, 0); last SWITCH;};
+			($field =~ s/^version\s+//) && do {$self->attribute("Version", $field, 0); last SWITCH;};
+            		($field =~ s/^deprecated\s+//) && do {$self->attribute("Deprecated", $field, 0); last SWITCH;};
+			($field =~ s/^updated\s+//) && do {$self->updated($field); last SWITCH;};
+			($field =~ /^see(also|)\s+/) &&
 				do {
 				    $self->see($field);
 				    last SWITCH;
 				};
-			($field =~ s/^discussion\s+//o) && do {$self->discussion($field); last SWITCH;};
-			($field =~ s/^templatefield\s+//o) && do {
+			($field =~ s/^discussion\s+//) && do {$self->discussion($field); last SWITCH;};
+			($field =~ s/^templatefield\s+//) && do {
 					$self->attributelist("Template Field", $field);
                                         last SWITCH;
 			};
-			($field =~ s/^param\s+//o) && 
+			($field =~ s/^param\s+//) && 
 			do {
-				$field =~ s/^\s+|\s+$//go; # trim leading and trailing whitespace
-	            # $field =~ /(\w*)\s*(.*)/so;
-		    $field =~ /(\S*)\s*(.*)/so;
+				$field =~ s/^\s+|\s+$//g; # trim leading and trailing whitespace
+	            # $field =~ /(\w*)\s*(.*)/s;
+		    $field =~ /(\S*)\s*(.*)/s;
 	            my $pName = $1;
 	            my $pDesc = $2;
 	            my $param = HeaderDoc::MinorAPIElement->new();
@@ -207,15 +147,30 @@ sub processComment {
 	            $self->addTaggedParameter($param);
 				last SWITCH;
 			};
-			($field =~ s/^return\s+//o) && do {$self->result($field); last SWITCH;};
-			($field =~ s/^result\s+//o) && do {$self->result($field); last SWITCH;};
+			($field =~ s/^return\s+//) && do {$self->result($field); last SWITCH;};
+			($field =~ s/^result\s+//) && do {$self->result($field); last SWITCH;};
 			# my $filename = $HeaderDoc::headerObject->filename();
 			my $filename = $self->filename();
 			my $linenum = $self->linenum();
-			if (length($field)) { warn "$filename:$linenum:Unknown field (\@$field) in function comment (".$self->name().")\n"; }
+			print "$filename:$linenum:Unknown field in Function comment: $field\n";
 		}
 	}
 }
+
+# Yikes!  This shouldn't be here!
+# 
+# sub getAPINameAndDisc {
+    # my $line = shift;
+    # my ($name, $disc, $operator);
+    # # first, get rid of leading space
+    # $line =~ s/^\s+//;
+    # ($name, $disc) = split (/\s/, $line, 2);
+    # if ($name =~ /operator/) {  # this is for operator overloading in C++
+        # ($operator, $name, $disc) = split (/\s/, $line, 3);
+        # $name = $operator." ".$name;
+    # }
+    # return ($name, $disc);
+# }
 
 sub setFunctionDeclaration {
     my $self = shift;
@@ -230,6 +185,263 @@ sub setFunctionDeclaration {
 
     $self->declarationInHTML($dec);
     return $dec;
+
+    # Throw all this away.
+    
+    #catch the case where this is a function-like macro
+    if ($dec =~/^#define/) {
+	# remove braced part
+	$dec =~ s/(#define\s+\w+\s*\(.*\))\s+\{.*?\}\s*$/$1/sg;
+
+        print "returning #define macro with declaration |$dec|\n" if ($localDebug);
+	if ($self->outputformat() eq "html") {
+            $dec =~ s/\\\n/\\<br>&nbsp;/g;
+    	    $self->declarationInHTML("<tt>$dec</tt><br>");
+            return"<tt>$dec</tt><br>\n";
+	} elsif (self->outputformat() eq "hdxml") {
+            return"$dec";
+	} else {
+	    print "ERROR: UNKNOWN OUTPUT FORMAT!\n";
+	}
+    }
+    # regularize whitespace
+    $dec =~ s/^\s+(.*)/$1/; # remove leading whitespace
+    $dec =~ s/ \t/ /g;
+    $dec =~ s/</&lt;/g;
+    $dec =~ s/>/&gt;/g;
+    
+    # remove return from parens of EXTERN_API(_C)(retval)
+    if ($dec =~ /^EXTERN_API(_C)?/) {
+        $dec =~ s/^EXTERN_API(_C)?\(([^)]+)\)(.*)/$2 $3/;
+        $dec =~ s/^\s+//;
+    }
+    # remove CF_EXPORT and find return value
+    $dec =~ s/^CF_EXPORT\s+(.*)/$1/;
+    # print "   with CF_EXPORT removed: $dec\n" if ($localDebug);
+
+    my $parenscheck = $dec;
+    $parenscheck =~ s/\s//smg;
+    $parenscheck =~ s/^[-+]//smg;
+    $parenscheck =~ s/^\(.*?\)//smg;
+    if ($parenscheck !~ /\(/) {
+	print "noparens\n" if ($localDebug);;
+	$noparens = 1;
+    } else {
+	print "PC: $parenscheck\n" if ($localDebug);;
+    }
+    
+    my $preOpeningParen = $dec;
+    $preOpeningParen =~ s/^\s+(.*)/$1/; # remove leading whitespace
+    $preOpeningParen =~ s/(\w[^(]+)\(([^)]*)\)(.*;[^;]*)$/$1/s;
+    my $withinParens = $2;
+    my $postParens = $3;
+    # print "-->|$preOpeningParen|\n" if ($localDebug);
+    
+    my @preParenParts = split ('\s+', $preOpeningParen);
+    my $funcName = pop @preParenParts;
+    my $return = join (' ', @preParenParts);
+
+    my $remainder = $withinParens;
+    my @parensElements = split(/,/, $remainder);
+    
+    # now get parameters
+    my $longstring = "";
+    my $position = 1;  
+    foreach my $element (@parensElements) {
+        $element =~ s/\n/ /g;
+        $element =~ s/^\s+//;
+        print "element->|$element|\n" if ($localDebug);
+        my @paramElements = split(/\s+/, $element);
+        my $paramName = pop @paramElements;
+        my $type = join (" ", @paramElements);
+        
+        #test for pointer asterisks and move to type portion of parameter declaration
+        if ($paramName =~ /^\*/) {
+            $paramName =~ s/^(\*+)(\w+)/$2/;
+            $type .= " $1";
+        }
+        
+        if ($paramName ne "void") { # some programmers write myFunc(void)
+            my $param = HeaderDoc::MinorAPIElement->new();
+	    $param->outputformat($self->outputformat);
+            $param->name($paramName);
+            $param->position($position);
+            $param->type($type);
+            $self->addParsedParameter($param);
+        }
+        $position++;
+
+	# print "element \"$element\".";
+	$element =~s/^\s*//;
+	$element =~s/\s+/ /g;
+	$element =~s/\s*$//;
+	if ($longstring eq "") {
+	    $longstring = "\n&nbsp;&nbsp;&nbsp;&nbsp;$element";
+	} else {
+	    $longstring = "$longstring,\n&nbsp;&nbsp;&nbsp;&nbsp;$element";
+	}
+    }
+
+    if ($postParens =~ /\(.*\)\s*;/smg) {
+      my $longstringb;
+      my $position;
+      my $pointerparms = $postParens;
+      $pointerparms =~ s/^\s*\(//;
+      $pointerparms =~ s/\)\s*;\s*$//;
+      my @parensElements = split(/,/, $pointerparms);
+      foreach my $element (@parensElements) {
+        $element =~ s/\n/ /g;
+        $element =~ s/^\s+//;
+        print "element->|$element|\n" if ($localDebug);
+        my @paramElements = split(/\s+/, $element);
+        my $paramName = pop @paramElements;
+        my $type = join (" ", @paramElements);
+        
+        #test for pointer asterisks and move to type portion of parameter declaration
+        if ($paramName =~ /^\*/) {
+            $paramName =~ s/^(\*+)(\w+)/$2/;
+            $type .= " $1";
+        }
+        
+        if ($paramName ne "void") { # some programmers write myFunc(void)
+            my $param = HeaderDoc::MinorAPIElement->new();
+	    $param->outputformat($self->outputformat);
+            $param->name($paramName);
+            $param->position($position);
+            $param->type($type);
+            $self->addParsedParameter($param);
+        }
+        $position++;
+
+	$element =~s/^\s*//;
+	$element =~s/\s+/ /g;
+	$element =~s/\s*$//;
+	if ($longstringb eq "") {
+	    $longstringb = "&nbsp;(\n&nbsp;&nbsp;&nbsp;&nbsp;$element";
+	} else {
+	    $longstringb = "$longstringb,\n&nbsp;&nbsp;&nbsp;&nbsp;$element";
+	}
+      }
+      $longstringb .= "\n);\n";
+      $postParens = $longstringb;
+    }
+    if (!($return eq "")) { $return .= " "; }
+    if ($noparens) {
+	$retval = "<tt>$return$funcName $postParens</tt><br>\n";
+    } else {
+      if ($remainder =~/^\s*$/ || $remainder =~/^\s*void\s*$/) {
+	$retval = "<tt>$return$funcName (void)$postParens</tt><br>\n";
+      } else {
+	$retval = "<tt>$return$funcName ($longstring\n)$postParens</tt><br>\n";
+      }
+    }
+    print "Function: $funcName -- returning declaration:\n\t|$retval|\n" if ($localDebug);
+    print "============================================================================\n" if ($localDebug);
+    my $origdec = $self->declaration();
+    $retval = $origdec;
+    $self->declarationInHTML($retval);
+    return $retval;
+}
+
+
+sub XMLdocumentationBlock {
+    my $self = shift;
+    my $contentString;
+    my $name = $self->name();
+    my $desc = $self->discussion();
+    my $throws = $self->XMLthrows();
+    my $abstract = $self->abstract();
+    my $availability = $self->availability();
+    my $updated = $self->updated();
+    my $declaration = $self->declarationInHTML();
+    my @parsedparams = $self->parsedParameters();
+    my @params = $self->taggedParameters();
+    my $returntype = $self->returntype();
+    my $result = $self->result();
+    my $group = $self->group();
+    my $attlists = $self->getAttributeLists();
+    my $atts = $self->getAttributes();
+    # my $apiUIDPrefix = HeaderDoc::APIOwner->apiUIDPrefix();
+    my $functype = "func";
+
+    if ($self->isTemplate()) { $functype = "ftmplt"; }
+    my $uid = $self->apiuid($functype); # "//$apiUIDPrefix/c/func/$name";
+
+    # registerUID($uid);
+    $contentString .= "<function id=\"$uid\">\n"; # apple_ref marker
+    $contentString .= "<name>$name</name>\n";
+    if (length($availability)) {
+        $contentString .= "<availability>$availability</availability>\n";
+    }
+    if (length($updated)) {
+        $contentString .= "<updated>$updated</updated>\n";
+    }
+    if (length($group)) {
+	$contentString .= "<group>$group</group>\n";
+    }
+    if (length($abstract)) {
+        $contentString .= "<abstract>$abstract</abstract>\n";
+    }
+    if (length($throws)) {
+	$contentString .= "$throws\n";
+    }
+    $contentString .= "<declaration>$declaration</declaration>\n";
+    $contentString .= "<description>$desc</description>\n";
+    my $arrayLength = @params;
+    if ($arrayLength > 0) {
+        my $paramContentString;
+        foreach my $element (@params) {
+            my $pName = $element->name();
+            my $pDesc = $element->discussion();
+            if (length ($pName)) {
+                $paramContentString .= "<parameter><name>$pName</name><desc>$pDesc</desc></parameter>\n";
+            }
+        }
+        if (length ($paramContentString)){
+	    $contentString .= "<parameterlist>\n";
+            $contentString .= $paramContentString;
+	    $contentString .= "</parameterlist>\n";
+        }
+    }
+    my $arrayLength = @parsedparams;
+    if ($arrayLength > 0) {
+        my $paramContentString;
+        foreach my $element (@parsedparams) {
+            my $pName = $element->name();
+            my $pType = $element->type();
+
+	    $pType =~ s/\s*$//s;
+	    if ($pName =~ s/^\s*(\*+)\s*//s) {
+		$pType .= " $1";
+	    }
+
+	    $pType = $self->textToXML($pType);
+	    $pName = $self->textToXML($pName);
+
+            if (length ($pName) || length($pType)) {
+                $paramContentString .= "<parsedparameter><type>$pType</type><name>$pName</name></parsedparameter>\n";
+            }
+        }
+        if (length ($paramContentString)){
+	    $contentString .= "<parsedparameterlist>\n";
+            $contentString .= $paramContentString;
+	    $contentString .= "</parsedparameterlist>\n";
+        }
+    }
+    if (length($atts)) {
+	$contentString .= "<attributes>$atts</attributes>\n";
+    }
+    if (length($attlists)) {
+	$contentString .= "<attributelists>$attlists</attributelists>\n";
+    }
+    if (length($returntype)) {
+	$contentString .= "<returntype>$returntype</returntype>\n";
+    }
+    if (length($result)) {
+        $contentString .= "<result>$result</result>\n";
+    }
+    $contentString .= "</function>\n";
+    return $contentString;
 }
 
 sub conflict {

@@ -5,7 +5,7 @@
 # from a C++ header
 #
 # Author: Matt Morse (matt@apple.com)
-# Last Updated: $Date: 2004/06/10 22:12:15 $
+# Last Updated: $Date: 2004/02/09 19:35:19 $
 # 
 # Copyright (c) 1999-2004 Apple Computer, Inc.  All rights reserved.
 #
@@ -36,7 +36,7 @@ BEGIN {
 }
 package HeaderDoc::CPPClass;
 
-use HeaderDoc::Utilities qw(findRelativePath safeName getAPINameAndDisc printArray printHash registerUID sanitize);
+use HeaderDoc::Utilities qw(findRelativePath safeName getAPINameAndDisc printArray printHash registerUID);
 use HeaderDoc::APIOwner;
 
 use strict;
@@ -48,7 +48,7 @@ $VERSION = '1.20';
 ################ Portability ###################################
 my $isMacOS;
 my $pathSeparator;
-if ($^O =~ /MacOS/io) {
+if ($^O =~ /MacOS/i) {
 	$pathSeparator = ":";
 	$isMacOS = 1;
 } else {
@@ -73,7 +73,6 @@ sub _initialize {
     $self->SUPER::_initialize();
     $self->tocTitlePrefix('Class:');
     $self->{ISCOMINTERFACE} = 0;
-    $self->{CLASS} = "HeaderDoc::CPPClass";
 }
 
 sub clone {
@@ -107,9 +106,7 @@ sub _getCompositePageString {
     my $name = $self->name();
     my $compositePageString;
     my $contentString;
-    my $list_attributes = $self->getAttributeLists(1);
-
-    $compositePageString .= $self->compositePageAPIRef();
+    my $list_attributes = $self->getAttributeLists();
     
     my $abstract = $self->abstract();
     if (length($abstract)) {
@@ -137,7 +134,7 @@ sub _getCompositePageString {
 
     my $short_attributes = $self->getAttributes(0);
     my $long_attributes = $self->getAttributes(1);
-    my $list_attributes = $self->getAttributeLists(1);
+    my $list_attributes = $self->getAttributeLists();
     if (length($short_attributes)) {
             $compositePageString .= "$short_attributes";
     }
@@ -162,58 +159,52 @@ sub _getCompositePageString {
 	    $compositePageString .= "<hr><br>";
     # }
 
-    my $etoc = $self->_getClassEmbeddedTOC(1);
-    if (length($etoc)) {
-	$compositePageString .= $etoc;
-	$compositePageString .= "<hr><br>";
-    }
-
     $contentString= $self->_getFunctionDetailString(1);
     if (length($contentString)) {
 	    $compositePageString .= "<h2>Member Functions</h2>\n";
-		# $contentString = $self->stripAppleRefs($contentString);
+		$contentString = $self->stripAppleRefs($contentString);
 	    $compositePageString .= $contentString;
     }
     
-    $contentString= $self->_getVarDetailString(1);
+    $contentString= $self->_getVarDetailString();
     if (length($contentString)) {
 	    $compositePageString .= "<h2>Member Data</h2>\n";
-		# $contentString = $self->stripAppleRefs($contentString);
+		$contentString = $self->stripAppleRefs($contentString);
 	    $compositePageString .= $contentString;
     }
     
-    $contentString= $self->_getConstantDetailString(1);
+    $contentString= $self->_getConstantDetailString();
     if (length($contentString)) {
 	    $compositePageString .= "<h2>Constants</h2>\n";
-		# $contentString = $self->stripAppleRefs($contentString);
+		$contentString = $self->stripAppleRefs($contentString);
 	    $compositePageString .= $contentString;
     }
     
-    $contentString= $self->_getTypedefDetailString(1);
+    $contentString= $self->_getTypedefDetailString();
     if (length($contentString)) {
 	    $compositePageString .= "<h2>Typedefs</h2>\n";
-		# $contentString = $self->stripAppleRefs($contentString);
+		$contentString = $self->stripAppleRefs($contentString);
 	    $compositePageString .= $contentString;
     }
     
-    $contentString= $self->_getStructDetailString(1);
+    $contentString= $self->_getStructDetailString();
     if (length($contentString)) {
 	    $compositePageString .= "<h2>Structs and Unions</h2>\n";
-		# $contentString = $self->stripAppleRefs($contentString);
+		$contentString = $self->stripAppleRefs($contentString);
 	    $compositePageString .= $contentString;
     }
     
-    $contentString= $self->_getEnumDetailString(1);
+    $contentString= $self->_getEnumDetailString();
     if (length($contentString)) {
 	    $compositePageString .= "<h2>Enumerations</h2>\n";
-		# $contentString = $self->stripAppleRefs($contentString);
+		$contentString = $self->stripAppleRefs($contentString);
 	    $compositePageString .= $contentString;
     }
 
-    $contentString= $self->_getPDefineDetailString(1);
+    $contentString= $self->_getPDefineDetailString();
     if (length($contentString)) {
 	    $compositePageString .= "<h2>#defines</h2>\n";
-		# $contentString = $self->stripAppleRefs($contentString);
+		$contentString = $self->stripAppleRefs($contentString);
 	    $compositePageString .= $contentString;
     }  
     return $compositePageString;
@@ -251,15 +242,27 @@ sub _getFunctionDetailString {
         my $accessControl = $obj->accessControl();
         my @params = $obj->taggedParameters();
         my $result = $obj->result();
-	my $list_attributes = $obj->getAttributeLists($composite);
+	my $list_attributes = $obj->getAttributeLists();
 
 	$contentString .= "<hr>";
-	# if ($declaration !~ /#define/o) { # not sure how to handle apple_refs with macros yet
+	# if ($declaration !~ /#define/) { # not sure how to handle apple_refs with macros yet
+	        my $paramSignature = $self->getParamSignature($declarationRaw);
 	        my $methodType = $self->getMethodType($declarationRaw);
+        	# my $uid = "//$apiUIDPrefix/cpp/$methodType/$className/$name/$paramSignature";
+		# if ($obj->checkAttributeLists("Template Field")) {
+        	    # $uid = "//$apiUIDPrefix/cpp/ftmplt/$className/$name/$paramSignature";
+		# }
 		# registerUID($uid);
         	# $contentString .= "<a name=\"$uid\"></a>\n";
 		my $apiref = "";
-		$apiref = $obj->apiref($composite);
+		# if (length($paramSignature)) {
+			$paramSignature = "/$paramSignature";
+		# }
+		if ($obj->checkAttributeLists("Template Field")) {
+			$apiref = $obj->apiref("ftmplt", "$paramSignature");
+		} else {
+			$apiref = $obj->apiref($methodType, "$paramSignature");
+		}
 		$contentString .= $apiref;
         # }
 	my $parentclass = $obj->origClass();
@@ -271,11 +274,10 @@ sub _getFunctionDetailString {
 	$contentString .= "<table border=\"0\"  cellpadding=\"2\" cellspacing=\"2\" width=\"300\">";
 	$contentString .= "<tr>";
 	$contentString .= "<td valign=\"top\" height=\"12\" colspan=\"5\">";
-	my $urlname = sanitize($name);
-	$contentString .= "<h2><a name=\"$urlname\">$parentclass$name</a></h2>\n";
+	$contentString .= "<h2><a name=\"$name\">$parentclass$name</a></h2>\n";
 	$contentString .= "</td>";
 	$contentString .= "</tr></table>";
-	# $contentString .= "<hr>";
+	$contentString .= "<hr>";
 
 	if (length($throws)) {  
 		$contentString .= "<b>Throws:</b>\n$throws<BR>\n";
@@ -322,13 +324,107 @@ sub _getFunctionDetailString {
         }
 	    # $contentString .= "<hr>\n";
     }
-    $contentString .= "<hr>\n";
     return $contentString;
+}
+
+sub XMLdocumentationBlock {
+    my $self = shift;
+    my $compositePageString = "";
+    my $name = $self->name();
+    my $availability = $self->availability();
+    my $updated = $self->updated();
+    my $abstract = $self->abstract();
+    my $discussion = $self->discussion();
+    my $group = $self->group();
+    my $contentString;
+    
+    $compositePageString .= "<class type=\"C++\">";
+
+    if (length($name)) {
+	$compositePageString .= "<name>$name</name>\n";
+    }
+
+    if (length($abstract)) {
+	$compositePageString .= "<abstract>$abstract</abstract>\n";
+    }
+    if (length($availability)) {
+	$contentString .= "<availability>$availability</availability>\n";
+    }
+    if (length($updated)) {
+	$contentString .= "<updated>$updated</updated>\n";
+    }
+    if (length($group)) {
+	$contentString .= "<group>$group</group>\n";
+    }
+	my @fields = $self->fields();
+	if (@fields) {
+		$contentString .= "<template_fields>\n";
+		for my $field (@fields) {
+			my $name = $field->name();
+			my $desc = $field->discussion();
+			# print "field $name $desc\n";
+			$contentString .= "<field><name>$name</name><desc>$desc</desc></field>\n";
+		}
+		$contentString .= "</template_fields>\n";
+	}
+    if (length($discussion)) {
+	$compositePageString .= "<discussion>$discussion</discussion>\n";
+    }
+
+    $contentString= $self->_getFunctionXMLDetailString();
+    if (length($contentString)) {
+	$contentString = $self->stripAppleRefs($contentString);
+	$compositePageString .= "<functions>$contentString</functions>\n";
+    }
+
+    $contentString= $self->_getMethodXMLDetailString();
+    if (length($contentString)) {
+	$contentString = $self->stripAppleRefs($contentString);
+	$compositePageString .= "<methods>$contentString</methods>\n";
+    }
+    
+    $contentString= $self->_getVarXMLDetailString();
+    if (length($contentString)) {
+	$contentString = $self->stripAppleRefs($contentString);
+	$compositePageString .= "<globals>$contentString</globals>\n";
+    }
+    
+    $contentString= $self->_getConstantXMLDetailString();
+    if (length($contentString)) {
+	$contentString = $self->stripAppleRefs($contentString);
+	$compositePageString .= "<constants>$contentString</constants>\n";
+    }
+    
+    $contentString= $self->_getTypedefXMLDetailString();
+    if (length($contentString)) {
+	$contentString = $self->stripAppleRefs($contentString);
+	$compositePageString .= "<typedefs>$contentString</typedefs>";
+    }
+    
+    $contentString= $self->_getStructXMLDetailString();
+    if (length($contentString)) {
+	$contentString = $self->stripAppleRefs($contentString);
+	$compositePageString .= "<structs>$contentString</structs>";
+    }
+    
+    $contentString= $self->_getEnumXMLDetailString();
+    if (length($contentString)) {
+	$contentString = $self->stripAppleRefs($contentString);
+	$compositePageString .= "<enums>$contentString</enums>";
+    }
+
+    $contentString= $self->_getPDefineXMLDetailString();
+    if (length($contentString)) {
+	$contentString = $self->stripAppleRefs($contentString);
+	$compositePageString .= "<defines>$contentString</defines>";
+    }  
+
+    $compositePageString .= "</class>";
+    return $compositePageString;
 }
 
 sub _getVarDetailString {
     my $self = shift;
-    my $composite = shift;
     my @varObjs = $self->vars();
     my $contentString;
 
@@ -371,18 +467,16 @@ sub _getVarDetailString {
 	# my $uid = "//$apiUIDPrefix/cpp/$methodType/$className/$name";
 	# registerUID($uid);
 	# $contentString .= "<a name=\"$uid\"></a>\n";
-	# Don't potentially change the uid....
-	my $apiref = $obj->apiref($composite); # , $methodType);
+	my $apiref = $obj->apiref($methodType);
 	$contentString .= $apiref;
         
 	$contentString .= "<table border=\"0\"  cellpadding=\"2\" cellspacing=\"2\" width=\"300\">";
 	$contentString .= "<tr>";
 	$contentString .= "<td valign=\"top\" height=\"12\" colspan=\"5\">";
-	my $urlname = sanitize($name);
-	$contentString .= "<h2><a name=\"$urlname\">$name</a></h2>\n";
+	$contentString .= "<h2><a name=\"$name\">$name</a></h2>\n";
 	$contentString .= "</td>";
 	$contentString .= "</tr></table>";
-	# $contentString .= "<hr>";
+	$contentString .= "<hr>";
 	if (length($abstract)) {
 		# $contentString .= "<b>Abstract:</b> $abstract<BR>\n";
 		$contentString .= "$abstract<BR>\n";
@@ -415,40 +509,35 @@ sub _getVarDetailString {
 	    # if (length($updated)) {
 		# $contentString .= "<b>Updated:</b> $updated\n";
 	    # }
+	    $contentString .= "<hr>\n";
     }
-    $contentString .= "<hr>\n";
     return $contentString;
 }
 
 sub getMethodType {
     my $self = shift;
-
 	my $declaration = shift;
 	my $methodType = "instm";
 	
-	if ($declaration =~ /^\s*static/o) {
+	if ($declaration =~ /^\s*static/) {
 	    $methodType = "clm";
-	}
-	if ($self->sublang() eq "C") {
-		# COM interfaces, C pseudoclasses
-		$methodType = "func";
 	}
 	return $methodType;
 }
 
-sub old_getParamSignature {
+sub getParamSignature {
     my $self = shift;
 	my $declaration = shift;
 	my $sig;
 	my @params;
 	
-	$declaration =~ s/^[^(]+\(([^)]*)\).*/$1/o;
+	$declaration =~ s/^[^(]+\(([^)]*)\).*/$1/;
 	@params = split (/,/, $declaration);
 	foreach my $paramString (@params) {
 	    my @paramElements = split (/\s+/, $paramString);
 	    my $lastElement = pop @paramElements;
 	    $sig .= join ("", @paramElements);
-	    if ($lastElement =~ /^\*.*/o) {$sig .= "*";};  #if the arg was a pointer
+	    if ($lastElement =~ /^\*.*/) {$sig .= "*";};  #if the arg was a pointer
 	}
 	return $sig;
 }
@@ -459,7 +548,8 @@ sub old_getParamSignature {
 sub docNavigatorComment {
     my $self = shift;
     my $name = $self->name();
-    $name =~ s/;//sgo;
+    $name =~ s/;//sg;
+    my $navComment = "<!-- headerDoc=cl; name=$name-->";
     # my $uid = "//apple_ref/cpp/cl/$name";
     my $type = "cl";
 
@@ -472,7 +562,6 @@ sub docNavigatorComment {
     my $uid = $self->apiuid($type);
 
     my $appleRef = "<a name=\"$uid\"></a>";
-    my $navComment = "<!-- headerDoc=cl; uid=$uid; name=$name-->";
     
     return "$navComment\n$appleRef";
 }

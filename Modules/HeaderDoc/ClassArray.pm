@@ -4,7 +4,7 @@
 # Synopsis: Holds info about a class line array
 #
 # Author: David Gatwood (dgatwood@apple.com)
-# Last Updated: $Date: 2004/03/10 19:12:16 $
+# Last Updated: $Date: 2004/01/20 01:00:23 $
 # 
 # Copyright (c) 1999-2004 Apple Computer, Inc.  All rights reserved.
 #
